@@ -1,17 +1,123 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { ShoppingBag, User, LogOut, LogIn, LayoutDashboard, Menu, X, ChevronRight } from 'lucide-react';
+import {
+  ShoppingBag, User, LogOut, LogIn, LayoutDashboard,
+  Menu, X, ChevronRight, ShoppingCart, Package, Settings,
+  Shield, ChevronDown,
+} from 'lucide-react';
 
 const linkClass = ({ isActive }) =>
   `relative text-[11px] font-bold uppercase tracking-widest py-2 px-1 transition-all duration-300
   after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:w-3
   after:scale-x-0 after:bg-brand-500 after:transition-transform after:duration-300
   hover:after:scale-x-100 ${
-    isActive
-      ? 'text-brand-500 after:scale-x-100'
-      : 'text-slate-600 hover:text-brand-500'
+    isActive ? 'text-brand-500 after:scale-x-100' : 'text-slate-600 hover:text-brand-500'
   }`;
+
+function UserDropdown({ auth, logout }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const initials = auth.user.name
+    ? auth.user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+    : 'U';
+
+  const menuItems = [
+    { to: '/profile', label: 'Hồ sơ cá nhân', icon: <Settings size={14} /> },
+    { to: '/orders', label: 'Đơn hàng của tôi', icon: <Package size={14} /> },
+    { to: '/cart', label: 'Giỏ hàng', icon: <ShoppingCart size={14} /> },
+    ...(auth.user.role === 'admin'
+      ? [{ to: '/admin', label: 'Quản trị viên', icon: <Shield size={14} /> }]
+      : []),
+  ];
+
+  return (
+    <div className="relative hidden md:block" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 px-2.5 py-1.5 transition-all duration-200 group"
+      >
+        {/* Avatar circle */}
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-brand-500 to-amber-400 text-white text-[10px] font-extrabold shadow-sm">
+          {initials}
+        </div>
+        <div className="text-left">
+          <p className="text-[11px] font-bold text-slate-800 max-w-[80px] truncate leading-tight">
+            {auth.user.name}
+          </p>
+          <p className="text-[9px] text-slate-400 leading-tight capitalize">
+            {auth.user.role === 'admin' ? 'Quản trị viên' : 'Khách hàng'}
+          </p>
+        </div>
+        <ChevronDown
+          size={13}
+          className={`text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute right-0 top-full mt-2.5 w-64 z-50 origin-top-right">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/60 overflow-hidden">
+            {/* Profile summary */}
+            <div className="flex items-center gap-3 bg-gradient-to-br from-brand-50 to-amber-50/40 border-b border-slate-100 px-4 py-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-500 to-amber-400 text-white text-sm font-extrabold shadow-md shadow-brand-500/20">
+                {initials}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold text-slate-900 truncate">{auth.user.name}</p>
+                <p className="text-[11px] text-slate-500 truncate">{auth.user.email}</p>
+                <span className={`inline-flex items-center mt-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                  auth.user.role === 'admin'
+                    ? 'bg-brand-100 text-brand-600'
+                    : 'bg-emerald-100 text-emerald-700'
+                }`}>
+                  {auth.user.role === 'admin' ? '⚡ Admin' : '✓ Khách hàng'}
+                </span>
+              </div>
+            </div>
+
+            {/* Menu items */}
+            <div className="py-1.5">
+              {menuItems.map(({ to, label, icon }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-brand-500 transition-colors group"
+                >
+                  <span className="text-slate-400 group-hover:text-brand-500 transition-colors">{icon}</span>
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Logout */}
+            <div className="border-t border-slate-100 py-1.5">
+              <button
+                onClick={() => { logout(); setOpen(false); }}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-[12px] font-semibold text-red-500 hover:bg-red-50 transition-colors group"
+              >
+                <LogOut size={14} className="text-red-400" />
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Header() {
   const { auth, cartCount, logout } = useApp();
@@ -55,10 +161,7 @@ export default function Header() {
             <NavLink to="/" className={linkClass}>Trang chủ</NavLink>
             <NavLink to="/products" className={linkClass}>Sản phẩm</NavLink>
             {auth && (
-              <>
-                <NavLink to="/profile" className={linkClass}>Hồ sơ</NavLink>
-                <NavLink to="/orders" className={linkClass}>Đơn hàng</NavLink>
-              </>
+              <NavLink to="/orders" className={linkClass}>Đơn hàng</NavLink>
             )}
           </nav>
 
@@ -77,33 +180,8 @@ export default function Header() {
             </button>
 
             {auth ? (
-              <div className="hidden md:flex items-center gap-2">
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 px-3 py-2 text-[11px] font-bold text-slate-700 transition-all"
-                >
-                  <User size={13} className="text-slate-400" />
-                  <span className="max-w-[72px] truncate">{auth.user.name}</span>
-                </Link>
-
-                {auth.user.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-50 hover:bg-brand-50 hover:border-brand-200 text-slate-500 hover:text-brand-500 transition-all"
-                    title="Bảng quản trị"
-                  >
-                    <LayoutDashboard size={14} />
-                  </Link>
-                )}
-
-                <button
-                  onClick={logout}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-50 hover:bg-red-50 hover:border-red-200 text-slate-500 hover:text-red-500 transition-all duration-200"
-                  title="Đăng xuất"
-                >
-                  <LogOut size={13} />
-                </button>
-              </div>
+              /* User dropdown replaces old profile link */
+              <UserDropdown auth={auth} logout={logout} />
             ) : (
               <Link
                 to="/login"
@@ -116,7 +194,7 @@ export default function Header() {
 
             {/* Mobile hamburger */}
             <button
-              onClick={() => setMobileOpen(v => !v)}
+              onClick={() => setMobileOpen((v) => !v)}
               className="flex md:hidden h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 hover:text-brand-500 transition-all"
             >
               {mobileOpen ? <X size={15} /> : <Menu size={15} />}
@@ -127,12 +205,26 @@ export default function Header() {
         {/* Mobile drawer */}
         {mobileOpen && (
           <div className="md:hidden border-t border-slate-100 bg-white px-4 py-5 space-y-1">
+            {auth && (
+              /* Mobile profile summary */
+              <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-gradient-to-br from-brand-50 to-amber-50/40 border border-brand-100/50">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-500 to-amber-400 text-white text-xs font-extrabold">
+                  {auth.user.name?.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() || 'U'}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900">{auth.user.name}</p>
+                  <p className="text-[10px] text-slate-500">{auth.user.email}</p>
+                </div>
+              </div>
+            )}
+
             {[
               { to: '/', label: 'Trang chủ' },
               { to: '/products', label: 'Sản phẩm' },
               ...(auth ? [
                 { to: '/profile', label: 'Hồ sơ' },
                 { to: '/orders', label: 'Đơn hàng' },
+                ...(auth.user.role === 'admin' ? [{ to: '/admin', label: 'Quản trị viên' }] : []),
               ] : []),
             ].map(({ to, label }) => (
               <NavLink
@@ -152,11 +244,11 @@ export default function Header() {
               </NavLink>
             ))}
 
-            <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+            <div className="pt-3 border-t border-slate-100">
               {auth ? (
                 <button
                   onClick={() => { logout(); setMobileOpen(false); }}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-100 transition"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-100 transition"
                 >
                   <LogOut size={13} /> Đăng xuất
                 </button>
@@ -164,7 +256,7 @@ export default function Header() {
                 <Link
                   to="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-2.5 text-[11px] font-bold text-white transition"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-2.5 text-[11px] font-bold text-white"
                 >
                   <LogIn size={13} /> Đăng nhập
                 </Link>
