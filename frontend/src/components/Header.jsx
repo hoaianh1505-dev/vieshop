@@ -160,9 +160,6 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-7">
             <NavLink to="/" className={linkClass}>Trang chủ</NavLink>
             <NavLink to="/products" className={linkClass}>Sản phẩm</NavLink>
-            {auth && (
-              <NavLink to="/orders" className={linkClass}>Đơn hàng</NavLink>
-            )}
           </nav>
 
           {/* Right actions */}

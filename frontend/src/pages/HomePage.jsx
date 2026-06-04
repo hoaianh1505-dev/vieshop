@@ -5,6 +5,7 @@ import BannerSlider from '../components/BannerSlider';
 import EmptyState from '../components/EmptyState';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import ProductCard from '../components/ProductCard';
+import { LeftSidebar, RightSidebar } from '../components/HomeSidebars';
 import { ArrowRight, Smartphone, Tablet, Headphones, Camera, ShieldCheck, Clock, Truck, ShoppingBag } from 'lucide-react';
 
 const getCategory = (productName) => {
@@ -67,7 +68,10 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="space-y-16">
+    <div className="flex gap-6 items-start">
+      <LeftSidebar />
+
+      <div className="flex-1 min-w-0 space-y-16">
       {/* Highlights Banner */}
       <BannerSlider />
 
@@ -256,6 +260,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </div>
+
+      <RightSidebar />
     </div>
   );
 }
