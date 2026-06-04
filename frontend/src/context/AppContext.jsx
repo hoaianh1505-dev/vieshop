@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 const AppContext = createContext(null);
 
@@ -32,7 +32,14 @@ export const AppProvider = ({ children }) => {
     }, 2600);
   };
 
+  const navigateRef = useRef(null);
+
   const addToCart = (product, quantity = 1) => {
+    if (!auth) {
+      pushToast('Vui lòng đăng nhập để thêm vào giỏ hàng', 'error');
+      if (navigateRef.current) navigateRef.current('/login');
+      return;
+    }
     setCart((current) => {
       const existing = current.find((item) => item.id === product.id);
       if (existing) {
@@ -51,7 +58,7 @@ export const AppProvider = ({ children }) => {
         },
       ];
     });
-    pushToast('Da them san pham vao gio hang');
+    pushToast('Đã thêm sản phẩm vào giỏ hàng 🛒');
   };
 
   const updateCartItem = (productId, quantity) => {
@@ -81,6 +88,7 @@ export const AppProvider = ({ children }) => {
       logout,
       pushToast,
       toasts,
+      navigateRef,
       cartCount: cart.reduce((sum, item) => sum + item.quantity, 0),
       cartSubtotal: cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0),
     }),

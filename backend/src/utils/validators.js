@@ -50,7 +50,7 @@ export const orderSchema = z.object({
     .min(1),
   customer_name: z.string().trim().min(2).max(120),
   customer_email: z.string().trim().email(),
-  customer_phone: z.string().trim().min(8).max(20),
+  customer_phone: z.string().trim().min(6).max(20),
   shipping_address: z.string().trim().min(10).max(255),
   note: z.string().trim().max(500).optional().or(z.literal('')),
 });

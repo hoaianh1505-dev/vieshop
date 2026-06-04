@@ -16,6 +16,8 @@ export default function CheckoutPage() {
     note: '',
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   const shippingThreshold = 500000;
   const shippingFee = cartSubtotal >= shippingThreshold ? 0 : 30000;
@@ -23,7 +25,25 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setError('');
+    setFieldErrors({});
 
+    // Client-side validation
+    const errors = {};
+    if (!form.customer_name.trim() || form.customer_name.trim().length < 2)
+      errors.customer_name = 'Họ tên phải có ít nhất 2 ký tự';
+    if (!form.customer_phone.trim() || form.customer_phone.trim().length < 6)
+      errors.customer_phone = 'Số điện thoại không hợp lệ (ít nhất 6 ký tự)';
+    if (!form.customer_email.trim())
+      errors.customer_email = 'Vui lòng nhập email';
+    if (!form.shipping_address.trim() || form.shipping_address.trim().length < 10)
+      errors.shipping_address = 'Địa chỉ phải có ít nhất 10 ký tự';
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setSubmitting(true);
     try {
       await api.post(
         '/orders',
@@ -34,10 +54,21 @@ export default function CheckoutPage() {
         authHeaders(auth.token),
       );
       clearCart();
-      pushToast('Đặt hàng thành công');
+      pushToast('Đặt hàng thành công! 🎉');
       navigate('/orders');
     } catch (err) {
-      setError(err.response?.data?.message || 'Không thể tiến hành đặt hàng');
+      const data = err.response?.data;
+      // Show field-level errors from Zod if available
+      if (data?.details?.fieldErrors) {
+        const fe = {};
+        Object.entries(data.details.fieldErrors).forEach(([k, msgs]) => {
+          fe[k] = msgs?.[0] || 'Không hợp lệ';
+        });
+        setFieldErrors(fe);
+      }
+      setError(data?.message || 'Không thể tiến hành đặt hàng. Vui lòng thử lại.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -64,50 +95,66 @@ export default function CheckoutPage() {
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-500">Họ và tên</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500">Họ và tên <span className="text-red-400">*</span></label>
                 <input
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:bg-white transition"
+                  className={`w-full rounded-xl border bg-slate-50/50 px-4 py-3 text-sm outline-none focus:bg-white transition ${
+                    fieldErrors.customer_name ? 'border-red-400 focus:border-red-400' : 'border-slate-200 focus:border-brand-500'
+                  }`}
                   placeholder="Nhập họ và tên..."
                   value={form.customer_name}
                   onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-                  required
                 />
+                {fieldErrors.customer_name && (
+                  <p className="text-[11px] text-red-500 font-medium">{fieldErrors.customer_name}</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-500">Số điện thoại</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500">Số điện thoại <span className="text-red-400">*</span></label>
                 <input
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:bg-white transition"
-                  placeholder="Nhập số điện thoại..."
+                  className={`w-full rounded-xl border bg-slate-50/50 px-4 py-3 text-sm outline-none focus:bg-white transition ${
+                    fieldErrors.customer_phone ? 'border-red-400 focus:border-red-400' : 'border-slate-200 focus:border-brand-500'
+                  }`}
+                  placeholder="VD: 0901 234 567"
                   value={form.customer_phone}
                   onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-                  required
                 />
+                {fieldErrors.customer_phone && (
+                  <p className="text-[11px] text-red-500 font-medium">{fieldErrors.customer_phone}</p>
+                )}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-500">Email liên hệ</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500">Email liên hệ <span className="text-red-400">*</span></label>
               <input
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:bg-white transition"
+                className={`w-full rounded-xl border bg-slate-50/50 px-4 py-3 text-sm outline-none focus:bg-white transition ${
+                  fieldErrors.customer_email ? 'border-red-400 focus:border-red-400' : 'border-slate-200 focus:border-brand-500'
+                }`}
                 placeholder="Nhập email của bạn..."
                 type="email"
                 value={form.customer_email}
                 onChange={(e) => setForm({ ...form, customer_email: e.target.value })}
-                required
               />
+              {fieldErrors.customer_email && (
+                <p className="text-[11px] text-red-500 font-medium">{fieldErrors.customer_email}</p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-500">Địa chỉ giao hàng</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500">Địa chỉ giao hàng <span className="text-red-400">*</span></label>
               <textarea
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:bg-white transition"
+                className={`w-full rounded-xl border bg-slate-50/50 px-4 py-3 text-sm outline-none focus:bg-white transition ${
+                  fieldErrors.shipping_address ? 'border-red-400 focus:border-red-400' : 'border-slate-200 focus:border-brand-500'
+                }`}
                 rows="3"
-                placeholder="Địa chỉ cụ thể (Số nhà, tên đường, phường/xã, quận/huyện...)"
+                placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
                 value={form.shipping_address}
                 onChange={(e) => setForm({ ...form, shipping_address: e.target.value })}
-                required
               />
+              {fieldErrors.shipping_address && (
+                <p className="text-[11px] text-red-500 font-medium">{fieldErrors.shipping_address}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -121,10 +168,27 @@ export default function CheckoutPage() {
               />
             </div>
 
-            {error ? <p className="text-xs font-semibold text-red-500">{error}</p> : null}
-            
-            <button className="w-full rounded-full bg-brand-500 hover:bg-brand-600 py-3.5 text-center text-sm font-semibold text-white shadow-soft transition duration-200">
-              Xác nhận đặt hàng
+            {error && (
+              <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs font-semibold text-red-600 flex items-start gap-2">
+                <span className="mt-0.5 shrink-0">⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded-full bg-brand-500 hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed py-3.5 text-center text-sm font-bold text-white shadow-md shadow-brand-500/20 transition duration-200 flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  Đang xử lý...
+                </>
+              ) : 'Xác nhận đặt hàng'}
             </button>
           </form>
         </div>
