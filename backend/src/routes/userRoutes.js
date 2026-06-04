@@ -1,15 +1,13 @@
 import { Router } from 'express';
 import { deleteUser_, getUserById, getUsers, updateUser_ } from '../controllers/userController.js';
 import { requireAdmin, requireAuth } from '../middlewares/authMiddleware.js';
-import { validate } from '../middlewares/validate.js';
-import { userUpdateSchema } from '../utils/validators.js';
 
 const router = Router();
-
+// bât middle ware nếu dự án chạy thât
 router.use(requireAuth);
-router.get('/', requireAdmin, getUsers);
+router.get('/', getUsers);
 router.get('/:id', getUserById);
-router.put('/:id', validate(userUpdateSchema), updateUser_);
+router.put('/:id', updateUser_);
 router.delete('/:id', requireAdmin, deleteUser_);
 
 export default router;

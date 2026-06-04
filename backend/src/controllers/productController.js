@@ -9,7 +9,6 @@ export const getProducts = asyncHandler(async (req, res) => {
 
   res.json(await listProducts({ page, limit, search, includeDrafts }));
 });
-
 export const getProductById = asyncHandler(async (req, res) => {
   res.json(await findProductById(req.params.id, req.user?.role === 'admin'));
 });

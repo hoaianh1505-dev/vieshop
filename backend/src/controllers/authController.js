@@ -1,5 +1,5 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { createUser, loginUser, getProfile } from '../services/userAuthService.js';
+import { createUser, loginUser, getProfile } from '../services/authService.js';
 
 export const register = asyncHandler(async (req, res) => {
   const result = await createUser(req.body);

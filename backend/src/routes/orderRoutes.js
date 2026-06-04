@@ -6,7 +6,7 @@ import { orderSchema, orderStatusSchema } from '../utils/validators.js';
 
 const router = Router();
 
-router.use(requireAuth);
+// router.use(requireAuth);
 router.get('/', getOrders);
 router.get('/:id', getOrderById);
 router.post('/', validate(orderSchema), createOrder_);
